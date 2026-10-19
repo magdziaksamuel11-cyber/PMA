@@ -38,7 +38,7 @@ export default function App() {
           value={item}
           onChangeText={setItem}
           style={styles.input}
-          placeholder="Napíš novú úlohu..."
+          placeholder="napis ulohu"
           onSubmitEditing={handleAddItem}
           returnKeyType="done"
         />
@@ -56,17 +56,14 @@ export default function App() {
             <Text style={styles.taskText}>{item.text}</Text>
 
             <Button
-              title="ZMAZAŤ"
+              title="DEL"
               color="red"
               onPress={() => handleDeleteItem(item.id)}
             />
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Zatiaľ nemáš žiadne úlohy.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.emptyText}>nemas nic.</Text>}
         contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
       />
     </View>
   );
