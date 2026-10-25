@@ -1,34 +1,84 @@
 import { useState } from "react";
 import {
-  Button,
   FlatList,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 
+import Item from "./Item";
+
 export default function App() {
   const [item, setItem] = useState("");
-  const [task, setTask] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [nextId, setNextId] = useState(1);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+
   function handleAddItem() {
-    if (item.trim() === "") return;
+    console.log("add", item);
 
-    setTask((currentTasks) => [
-      ...currentTasks,
-      { id: nextId, text: item.trim() },
-    ]);
+    if (item.trim() === "") {
+      console.log("nebola zadana uloha");
+      return;
+    }
 
+    const newTask = {
+      id: nextId,
+      text: item.trim(),
+      completed: false,
+    };
+
+    setTasks((currentTasks) => [...currentTasks, newTask]);
     setNextId((id) => id + 1);
     setItem("");
+
+    console.log("uloha vytvorena", newTask);
   }
 
-  function handleDeleteItem(id) {
-    setTask((currentTasks) =>
-      currentTasks.filter((taskItem) => taskItem.id !== id),
+  function handleToggleItem(id) {
+    console.log("zmena stavu s id:", id);
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => {
+        if (task.id === id) {
+          const updatedTask = {
+            ...task,
+            completed: !task.completed,
+          };
+
+          console.log("novy stav:", updatedTask);
+          return updatedTask;
+        }
+
+        return task;
+      }),
     );
+  }
+
+  function handleOpenDeleteModal(task) {
+    setSelectedTask(task);
+    setModalVisible(true);
+  }
+
+  function handleConfirmDelete() {
+    if (selectedTask === null) return;
+
+    setTasks((currentTasks) =>
+      currentTasks.filter((task) => task.id !== selectedTask.id),
+    );
+
+    setModalVisible(false);
+    setSelectedTask(null);
+  }
+
+  function handleCancelDelete() {
+    setModalVisible(false);
+    setSelectedTask(null);
   }
 
   return (
@@ -38,33 +88,65 @@ export default function App() {
           value={item}
           onChangeText={setItem}
           style={styles.input}
-          placeholder="napis ulohu"
+          placeholder="zadaj ulohu"
           onSubmitEditing={handleAddItem}
           returnKeyType="done"
         />
 
-        <Button title="ADD" onPress={handleAddItem} />
+        <Pressable style={styles.addButton} onPress={handleAddItem}>
+          <Text style={styles.addButtonText}>ADD</Text>
+        </Pressable>
       </View>
 
       <Text style={styles.title}>UDALOSTI</Text>
 
       <FlatList
-        data={task}
-        keyExtractor={(item) => item.id.toString()}
+        data={tasks}
+        keyExtractor={(task) => task.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.taskItem}>
-            <Text style={styles.taskText}>{item.text}</Text>
-
-            <Button
-              title="DEL"
-              color="red"
-              onPress={() => handleDeleteItem(item.id)}
-            />
-          </View>
+          <Item
+            task={item}
+            onToggle={handleToggleItem}
+            onDelete={handleOpenDeleteModal}
+          />
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>nemas nic.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>nemas nic</Text>}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
       />
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>odstranit???</Text>
+
+            <Text style={styles.modalMessage}>
+              isto chces odstranit „{selectedTask?.text}"?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={handleCancelDelete}
+              >
+                <Text style={styles.modalButtonText}>ne</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.modalButton, styles.deleteButton]}
+                onPress={handleConfirmDelete}
+              >
+                <Text style={styles.modalButtonText}>ano</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -72,24 +154,36 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    margin: 2,
-    padding: 10,
-    paddingTop: 50,
+    padding: 15,
+    paddingTop: 55,
+    backgroundColor: "#ffffff",
   },
   inputContainer: {
     flexDirection: "row",
-    gap: 10,
     alignItems: "center",
+    gap: 10,
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "black",
-    borderRadius: 5,
-    padding: 10,
+    borderColor: "#cccccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
   },
   title: {
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: "bold",
     marginTop: 25,
     marginBottom: 15,
@@ -98,24 +192,53 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 20,
   },
-  taskItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-  },
-  taskText: {
-    flex: 1,
-    fontSize: 16,
-    marginRight: 10,
-  },
   emptyText: {
-    color: "gray",
+    color: "#777777",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 25,
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalBox: {
+    width: "100%",
+    maxWidth: 350,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 7,
+  },
+  cancelButton: {
+    backgroundColor: "#777777",
+  },
+  deleteButton: {
+    backgroundColor: "#dc2626",
+  },
+  modalButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
   },
 });
