@@ -1,152 +1,49 @@
 import { useState } from "react";
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-
-import Item from "./Item";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function App() {
-  const [item, setItem] = useState("");
-  const [tasks, setTasks] = useState([]);
-  const [nextId, setNextId] = useState(1);
+  const [count, setCount] = useState(0);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-
-  function handleAddItem() {
-    console.log("add", item);
-
-    if (item.trim() === "") {
-      console.log("nebola zadana uloha");
-      return;
-    }
-
-    const newTask = {
-      id: nextId,
-      text: item.trim(),
-      completed: false,
-    };
-
-    setTasks((currentTasks) => [...currentTasks, newTask]);
-    setNextId((id) => id + 1);
-    setItem("");
-
-    console.log("uloha vytvorena", newTask);
+  function handleAdd() {
+    setCount((currentCount) => currentCount + 1);
+    console.log("po pridani", count);
   }
 
-  function handleToggleItem(id) {
-    console.log("zmena stavu s id:", id);
-
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => {
-        if (task.id === id) {
-          const updatedTask = {
-            ...task,
-            completed: !task.completed,
-          };
-
-          console.log("novy stav:", updatedTask);
-          return updatedTask;
-        }
-
-        return task;
-      }),
-    );
+  function handleSubtract() {
+    setCount((currentCount) => Math.max(0, currentCount - 1));
+    console.log("po ubrati", count);
   }
 
-  function handleOpenDeleteModal(task) {
-    setSelectedTask(task);
-    setModalVisible(true);
-  }
-
-  function handleConfirmDelete() {
-    if (selectedTask === null) return;
-
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== selectedTask.id),
-    );
-
-    setModalVisible(false);
-    setSelectedTask(null);
-  }
-
-  function handleCancelDelete() {
-    setModalVisible(false);
-    setSelectedTask(null);
+  function handleReset() {
+    setCount(0);
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={item}
-          onChangeText={setItem}
-          style={styles.input}
-          placeholder="zadaj ulohu"
-          onSubmitEditing={handleAddItem}
-          returnKeyType="done"
-        />
+      <Text style={styles.title}>pocitadlo objednavok</Text>
 
-        <Pressable style={styles.addButton} onPress={handleAddItem}>
-          <Text style={styles.addButtonText}>ADD</Text>
+      <Text style={[styles.counter, count >= 5 && styles.counterLimit]}>
+        {count}
+      </Text>
+
+      <View style={styles.buttons}>
+        <Pressable
+          onPress={handleSubtract}
+          disabled={count === 0}
+          style={[styles.button, count === 0 && styles.disabledButton]}
+        >
+          <Text style={styles.buttonText}>−</Text>
+        </Pressable>
+
+        <Pressable onPress={handleAdd} style={styles.button}>
+          <Text style={styles.buttonText}>+</Text>
         </Pressable>
       </View>
 
-      <Text style={styles.title}>UDALOSTI</Text>
-
-      <FlatList
-        data={tasks}
-        keyExtractor={(task) => task.id.toString()}
-        renderItem={({ item }) => (
-          <Item
-            task={item}
-            onToggle={handleToggleItem}
-            onDelete={handleOpenDeleteModal}
-          />
-        )}
-        ListEmptyComponent={<Text style={styles.emptyText}>nemas nic</Text>}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-      />
-
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancelDelete}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>odstranit???</Text>
-
-            <Text style={styles.modalMessage}>
-              isto chces odstranit „{selectedTask?.text}"?
-            </Text>
-
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={handleCancelDelete}
-              >
-                <Text style={styles.modalButtonText}>ne</Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.modalButton, styles.deleteButton]}
-                onPress={handleConfirmDelete}
-              >
-                <Text style={styles.modalButtonText}>ano</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <Pressable onPress={handleReset} style={styles.resetButton}>
+        <Text style={styles.buttonText}>vynulovat</Text>
+      </Pressable>
+      {count >= 5 && <Text style={styles.limitText}>dosiahol si limit</Text>}
     </View>
   );
 }
@@ -154,91 +51,60 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    paddingTop: 55,
     backgroundColor: "#ffffff",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#cccccc",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  addButton: {
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 20,
-    paddingVertical: 13,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: "#ffffff",
-    fontWeight: "bold",
-  },
-  title: {
-    fontSize: 23,
-    fontWeight: "bold",
-    marginTop: 25,
-    marginBottom: 15,
-  },
-  listContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  emptyText: {
-    color: "#777777",
-    textAlign: "center",
-    marginTop: 25,
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
-  modalBox: {
-    width: "100%",
-    maxWidth: 350,
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 20,
+
+  title: {
+    fontSize: 14,
+    marginBottom: 10,
   },
-  modalTitle: {
-    fontSize: 20,
+
+  counter: {
+    fontSize: 50,
     fontWeight: "bold",
-    marginBottom: 12,
+    color: "#000000",
+    marginBottom: 15,
   },
-  modalMessage: {
-    fontSize: 16,
-    marginBottom: 20,
+
+  counterLimit: {
+    color: "#dc2626",
   },
-  modalButtons: {
+
+  limitText: {
+    color: "#dc2626",
+    fontSize: 14,
+    marginBottom: 15,
+  },
+
+  buttons: {
     flexDirection: "row",
-    justifyContent: "flex-end",
     gap: 10,
+    marginBottom: 10,
   },
-  modalButton: {
+
+  button: {
+    backgroundColor: "#3478db",
     paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 7,
+    paddingHorizontal: 20,
+    borderRadius: 6,
   },
-  cancelButton: {
-    backgroundColor: "#777777",
+
+  disabledButton: {
+    backgroundColor: "#cccccc",
   },
-  deleteButton: {
-    backgroundColor: "#dc2626",
-  },
-  modalButtonText: {
+
+  buttonText: {
     color: "#ffffff",
+    fontSize: 16,
     fontWeight: "bold",
+  },
+
+  resetButton: {
+    backgroundColor: "#3478db",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
   },
 });
